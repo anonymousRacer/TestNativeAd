@@ -74,10 +74,10 @@ public abstract class BaseAdapter extends RecyclerView.Adapter<RecyclerView.View
     }
 
     @Override
-    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+    public void onBindViewHolder(RecyclerView.ViewHolder holder, final int position) {
         switch (holder.getItemViewType()) {
             case AD_TYPE:
-                NativeAdViewHolder viewHolder = (NativeAdViewHolder) holder;
+                final NativeAdViewHolder viewHolder = (NativeAdViewHolder) holder;
                 AdObject adObject = (AdObject) items.get(position);
                 if (adObject.getNativeAd() != null) {
                     if (adObject.getNativeAd().isAdLoaded()) {
@@ -88,7 +88,23 @@ public abstract class BaseAdapter extends RecyclerView.Adapter<RecyclerView.View
                     adObject.setContext(context);
                     adObject.setAdapter(this);
                     adObject.setNativeAd(new NativeAd(context, "450240575183008_493902080816857"));
-                    adObject.getNativeAd().setAdListener((AdListener) holder);
+                    adObject.getNativeAd().setAdListener(new AdListener() {
+                        @Override
+                        public void onError(Ad ad, AdError adError) {
+
+                        }
+
+                        @Override
+                        public void onAdLoaded(Ad ad) {
+                            ((AdObject) items.get(position)).setNativeAd((NativeAd) ad);
+                            viewHolder.configureView((NativeAd)ad);
+                        }
+
+                        @Override
+                        public void onAdClicked(Ad ad) {
+
+                        }
+                    });
                     adObject.showNativeAd();
                 }
                 break;
@@ -98,7 +114,7 @@ public abstract class BaseAdapter extends RecyclerView.Adapter<RecyclerView.View
         }
     }
 
-    private class NativeAdViewHolder extends RecyclerView.ViewHolder implements AdListener{
+    private class NativeAdViewHolder extends RecyclerView.ViewHolder {
 
         private TextView nativeAdTitle;
         private TextView nativeAdBody;
@@ -144,20 +160,6 @@ public abstract class BaseAdapter extends RecyclerView.Adapter<RecyclerView.View
             nativeAd.registerViewForInteraction(adView);
         }
 
-        @Override
-        public void onError(Ad ad, AdError adError) {
-
-        }
-
-        @Override
-        public void onAdLoaded(Ad ad) {
-            this.configureView((NativeAd) ad);
-        }
-
-        @Override
-        public void onAdClicked(Ad ad) {
-
-        }
     }
 
 }
