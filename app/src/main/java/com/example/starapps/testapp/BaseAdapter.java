@@ -1,6 +1,7 @@
 package com.example.starapps.testapp;
 
 import android.content.Context;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,10 +13,12 @@ import java.util.ArrayList;
 
 import android.support.v7.widget.RecyclerView;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Button;
 
 import com.facebook.ads.Ad;
+import com.facebook.ads.AdChoicesView;
 import com.facebook.ads.AdError;
 import com.facebook.ads.AdListener;
 import com.facebook.ads.MediaView;
@@ -27,7 +30,7 @@ import com.facebook.ads.NativeAd;
 public abstract class BaseAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>{
 
     Context context;
-    AdsList items;
+    ArrayList<Object> items;
 
     private final int AD_TYPE = 0, CHILD_TYPE = 1;
 
@@ -35,19 +38,14 @@ public abstract class BaseAdapter extends RecyclerView.Adapter<RecyclerView.View
 
     abstract RecyclerView.ViewHolder loadChildViewHolder(LayoutInflater inflater, ViewGroup parent);
 
-    BaseAdapter(Context context, AdsList items, int firstAdIndex, int adFrequency) {
-        this.context = context;
-        this.items = items;
-    }
-
-    BaseAdapter(Context context, AdsList items) {
+    BaseAdapter(Context context, ArrayList<Object> items) {
         this.context = context;
         this.items = items;
     }
 
     @Override
     public int getItemViewType(int position) {
-        if (items.get(position) instanceof AdObject){
+        if (items.get(position) instanceof NativeAd){
             return AD_TYPE;
         }
         return CHILD_TYPE;
@@ -61,7 +59,7 @@ public abstract class BaseAdapter extends RecyclerView.Adapter<RecyclerView.View
         switch (viewType) {
             case AD_TYPE:
                 View v = inflater.inflate(R.layout.row_list_native_ad, parent, false);
-                viewHolder = new NativeAdViewHolder(v);
+                viewHolder = new NativeAdViewHolder(v, context);
                 break;
             case CHILD_TYPE:
                 viewHolder = loadChildViewHolder(inflater, parent);
@@ -77,35 +75,12 @@ public abstract class BaseAdapter extends RecyclerView.Adapter<RecyclerView.View
     public void onBindViewHolder(RecyclerView.ViewHolder holder, final int position) {
         switch (holder.getItemViewType()) {
             case AD_TYPE:
-                final NativeAdViewHolder viewHolder = (NativeAdViewHolder) holder;
-                AdObject adObject = (AdObject) items.get(position);
-                if (adObject.getNativeAd() != null) {
-                    if (adObject.getNativeAd().isAdLoaded()) {
-                        viewHolder.configureView(adObject.getNativeAd());
+                NativeAdViewHolder viewHolder = (NativeAdViewHolder) holder;
+                NativeAd adObject = (NativeAd) items.get(position);
+                if (adObject != null) {
+                    if (adObject.isAdLoaded()) {
+                        viewHolder.configureView(adObject);
                     }
-                }
-                else {
-                    adObject.setContext(context);
-                    adObject.setAdapter(this);
-                    adObject.setNativeAd(new NativeAd(context, "450240575183008_493902080816857"));
-                    adObject.getNativeAd().setAdListener(new AdListener() {
-                        @Override
-                        public void onError(Ad ad, AdError adError) {
-
-                        }
-
-                        @Override
-                        public void onAdLoaded(Ad ad) {
-                            ((AdObject) items.get(position)).setNativeAd((NativeAd) ad);
-                            viewHolder.configureView((NativeAd)ad);
-                        }
-
-                        @Override
-                        public void onAdClicked(Ad ad) {
-
-                        }
-                    });
-                    adObject.showNativeAd();
                 }
                 break;
             case CHILD_TYPE:
@@ -114,7 +89,7 @@ public abstract class BaseAdapter extends RecyclerView.Adapter<RecyclerView.View
         }
     }
 
-    private class NativeAdViewHolder extends RecyclerView.ViewHolder {
+    private static class NativeAdViewHolder extends RecyclerView.ViewHolder {
 
         private TextView nativeAdTitle;
         private TextView nativeAdBody;
@@ -122,12 +97,13 @@ public abstract class BaseAdapter extends RecyclerView.Adapter<RecyclerView.View
         private Button nativeAdCallToAction;
         private ImageView nativeAdIcon;
         private MediaView nativeAdMedia;
-
         private View adView;
+        private Context context;
 
-        public NativeAdViewHolder(View adView) {
+        public NativeAdViewHolder(View adView, Context context) {
             super(adView);
             this.adView = adView;
+            this.context = context;
             nativeAdIcon = (ImageView)adView.findViewById(R.id.native_ad_icon);
             nativeAdTitle = (TextView)adView.findViewById(R.id.native_ad_title);
             nativeAdBody = (TextView)adView.findViewById(R.id.native_ad_body);
@@ -137,11 +113,6 @@ public abstract class BaseAdapter extends RecyclerView.Adapter<RecyclerView.View
         }
 
         public void configureView(NativeAd nativeAd) {
-
-            Log.d("nativeAd", nativeAd.getAdSocialContext());
-            Log.d("nativeAd", nativeAd.getAdCallToAction());
-            Log.d("nativeAd", nativeAd.getAdTitle());
-            Log.d("nativeAd", nativeAd.getAdBody());
 
             // Setting the Text.
             nativeAdSocialContext.setText(nativeAd.getAdSocialContext());
@@ -155,8 +126,16 @@ public abstract class BaseAdapter extends RecyclerView.Adapter<RecyclerView.View
 
             // Download and setting the cover image.
             NativeAd.Image adCoverImage = nativeAd.getAdCoverImage();
+            int bannerWidth = adCoverImage.getWidth();
+            int bannerHeight = adCoverImage.getHeight();
+            DisplayMetrics metrics = context.getResources().getDisplayMetrics();
+            int mediaWidth = adView.getWidth() > 0 ? adView.getWidth() : metrics.widthPixels;
+            nativeAdMedia.setLayoutParams(new LinearLayout.LayoutParams(
+                    mediaWidth,
+                    Math.min(
+                            (int) (((double) mediaWidth / (double) bannerWidth) * bannerHeight),
+                            metrics.heightPixels / 3)));
             nativeAdMedia.setNativeAd(nativeAd);
-
             nativeAd.registerViewForInteraction(adView);
         }
 

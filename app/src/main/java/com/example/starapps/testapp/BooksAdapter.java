@@ -18,7 +18,7 @@ import java.util.ArrayList;
  */
 public class BooksAdapter extends BaseAdapter {
 
-    BooksAdapter(Context context, AdsList items) {
+    BooksAdapter(Context context, ArrayList<Object> items) {
         super(context, items);
     }
 
