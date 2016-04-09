@@ -16,10 +16,10 @@ import com.facebook.ads.NativeAdsManager;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements NativeAdsManager.Listener, AdListener {
+public class MainActivity extends AppCompatActivity {
 
     RecyclerView recyclerView;
-    ArrayList<Object> items;
+    ArrayList<Book> items;
     private NativeAdsManager listNativeAdsManager;
     int adFrequency = 4;
     int firstAdIndex = 2;
@@ -39,50 +39,13 @@ public class MainActivity extends AppCompatActivity implements NativeAdsManager.
         adapter = new BooksAdapter(this, items);
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-
-        maxAds = ( ( items.size() - firstAdIndex ) / adFrequency ) + 1;
-        listNativeAdsManager = new NativeAdsManager(this, "450240575183008_493902080816857", maxAds);
-        listNativeAdsManager.setListener(this);
-        listNativeAdsManager.loadAds();
     }
 
     public void setItems() {
-        items = new ArrayList<Object>();
-        for (int i = 0; i < 25; i++) {
+        items = new ArrayList<Book>();
+        for (int i = 0; i < 20; i++) {
             items.add(new Book("Testing Book" + i));
         }
-    }
-
-    @Override
-    public void onAdsLoaded() {
-        int index = 0;
-        while(index != maxAds) {
-            NativeAd ad = this.listNativeAdsManager.nextNativeAd();
-            ad.setAdListener(this);
-            items.add(firstAdIndex + index * (adFrequency + 1), ad);
-            index++;
-        }
-        adapter.notifyDataSetChanged();
-    }
-
-    @Override
-    public void onAdLoaded(Ad ad) {
-
-    }
-
-    @Override
-    public void onAdError(AdError adError) {
-
-    }
-
-    @Override
-    public void onAdClicked(Ad ad) {
-
-    }
-
-    @Override
-    public void onError(Ad ad, AdError adError) {
-
     }
 
 }

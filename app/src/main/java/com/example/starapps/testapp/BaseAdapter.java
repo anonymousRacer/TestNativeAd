@@ -2,13 +2,10 @@ package com.example.starapps.testapp;
 
 import android.content.Context;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import java.io.Console;
-import java.lang.Object;
 import java.util.ArrayList;
 
 import android.support.v7.widget.RecyclerView;
@@ -17,10 +14,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Button;
 
-import com.facebook.ads.Ad;
-import com.facebook.ads.AdChoicesView;
-import com.facebook.ads.AdError;
-import com.facebook.ads.AdListener;
 import com.facebook.ads.MediaView;
 import com.facebook.ads.NativeAd;
 
@@ -30,22 +23,41 @@ import com.facebook.ads.NativeAd;
 public abstract class BaseAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>{
 
     Context context;
-    ArrayList<Object> items;
+    ArrayList items;
+    ArrayList<AdObject> adsList;
 
     private final int AD_TYPE = 0, CHILD_TYPE = 1;
+    private int AD_FREQUENCY = 4, AD_FIRST_INDEX = 2;
 
     abstract void populateChild(RecyclerView.ViewHolder holder, int position);
 
     abstract RecyclerView.ViewHolder loadChildViewHolder(LayoutInflater inflater, ViewGroup parent);
 
-    BaseAdapter(Context context, ArrayList<Object> items) {
+    BaseAdapter(Context context, ArrayList items) {
         this.context = context;
         this.items = items;
+        adsList = new ArrayList<AdObject>();
+    }
+
+    BaseAdapter(Context context, ArrayList items, int AD_FIRST_INDEX, int AD_FREQUENCY) {
+        this.context = context;
+        this.items = items;
+        this.AD_FREQUENCY = AD_FREQUENCY;
+        this.AD_FIRST_INDEX = AD_FIRST_INDEX;
+        adsList = new ArrayList<AdObject>();
+    }
+
+    private boolean isAPTerm(int term) {
+        return ( term - AD_FIRST_INDEX ) % ( AD_FREQUENCY + 1 ) == 0;
+    }
+
+    private int getTermIndex(int term) {
+        return ( term - AD_FIRST_INDEX ) / ( AD_FREQUENCY + 1 );
     }
 
     @Override
     public int getItemViewType(int position) {
-        if (items.get(position) instanceof NativeAd){
+        if ( isAPTerm(position) ) {
             return AD_TYPE;
         }
         return CHILD_TYPE;
@@ -73,18 +85,31 @@ public abstract class BaseAdapter extends RecyclerView.Adapter<RecyclerView.View
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, final int position) {
+        int termIndex = getTermIndex(position);
         switch (holder.getItemViewType()) {
             case AD_TYPE:
                 NativeAdViewHolder viewHolder = (NativeAdViewHolder) holder;
-                NativeAd adObject = (NativeAd) items.get(position);
-                if (adObject != null) {
-                    if (adObject.isAdLoaded()) {
-                        viewHolder.configureView(adObject);
+
+                if ( termIndex + 1 > adsList.size() ) {
+                    adsList.add(termIndex, new AdObject(context, this, position));
+                }
+
+                if (adsList.get(termIndex).getNativeAd() != null )  {
+                    if (adsList.get(termIndex).getNativeAd().isAdLoaded()) {
+                        viewHolder.configureView(adsList.get(termIndex).getNativeAd());
                     }
+                }
+                else {
+                    adsList.get(termIndex).showNativeAd();
                 }
                 break;
             case CHILD_TYPE:
-                populateChild(holder, position);
+                if (position > 2) {
+                    populateChild(holder, position - termIndex - 1);
+                }
+                else {
+                    populateChild(holder, position);
+                }
                 break;
         }
     }

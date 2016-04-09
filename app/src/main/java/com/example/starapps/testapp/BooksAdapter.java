@@ -18,7 +18,7 @@ import java.util.ArrayList;
  */
 public class BooksAdapter extends BaseAdapter {
 
-    BooksAdapter(Context context, ArrayList<Object> items) {
+    BooksAdapter(Context context, ArrayList<Book> items) {
         super(context, items);
     }
 
@@ -36,7 +36,7 @@ public class BooksAdapter extends BaseAdapter {
 
     @Override
     public int getItemCount() {
-        return items.size();
+        return items.size() + adsList.size();
     }
 
     public class ViewHolder1 extends RecyclerView.ViewHolder {
